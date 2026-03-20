@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dvrk NILAM AutoM V1.4 | Pusat Kawalan</title>
+    <meta name="description" content="Sistem automasi rekod NILAM AINS Artikel untuk sekolah-sekolah di Malaysia">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="bg-effects">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="dashboard-wrapper">
+        <!-- HEADER UTAMA -->
+        <header class="top-bar">
+            <div class="logo-group">
+                <span class="logo-emoji">🌑</span>
+                <div class="title-group">
+                    <h1>Dvrk NILAM AutoM V1.4</h1>
+                    <p>Automasi AINS Artikel — Versi Premium</p>
+                </div>
+            </div>
+            <div class="global-status" id="statusBadge">
+                <span class="status-dot"></span>
+                <span class="status-text">TERPUTUS</span>
+            </div>
+        </header>
+
+        <main class="dashboard-grid">
+            <!-- PANEL KIRI: KAWALAN & STATISTIK -->
+            <aside class="panel-left">
+                <section class="control-card glass">
+                    <div class="section-label">PUSAT KAWALAN</div>
+                    <button class="btn-main" id="mainBtn" onclick="toggleAutomation()">
+                        <span class="btn-icon" id="btnIcon">🚀</span>
+                        <span class="btn-text" id="btnText">MULAKAN</span>
+                    </button>
+                    
+                    <div class="mini-stats">
+                        <div class="mini-stat">
+                            <span id="statSubmitted">0</span>
+                            <small>BERJAYA HARI INI</small>
+                        </div>
+                        <div class="mini-stat">
+                            <span id="statFetched">0</span>
+                            <small>DIJUMPAI</small>
+                        </div>
+                        <div class="mini-stat ralat">
+                            <span id="statErrors">0</span>
+                            <small>RALAT</small>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-card glass" id="settingsDrawer">
+                    <div class="section-header">
+                        <h2>⚙️ KONFIGURASI</h2>
+                    </div>
+                    <div class="settings-form">
+                        <div class="field">
+                            <label>Kunci API Gemini</label>
+                            <input type="password" id="geminiKey" placeholder="••••••••••••••••">
+                        </div>
+                        <div class="field">
+                            <label>ID DELIMa</label>
+                            <input type="text" id="delimaEmail" placeholder="m-12345678@moe-dl.edu.my">
+                        </div>
+                        <div class="field">
+                            <label>Kata Laluan DELIMa</label>
+                            <input type="password" id="delimaPassword" placeholder="••••••••">
+                        </div>
+                        <div class="field">
+                            <label>Selang Masa (Minit)</label>
+                            <input type="number" id="intervalMin" min="5" value="5">
+                        </div>
+                        <button class="btn-save" onclick="saveSettings()">💾 TERAPKAN TETAPAN</button>
+                    </div>
+                </section>
+            </aside>
+
+            <!-- PANEL KANAN: AKTIVITI & SEJARAH -->
+            <div class="panel-right">
+                <!-- DAILY LIMIT BANNER (hidden by default) -->
+                <section class="daily-limit-banner glass" id="dailyLimitBanner" style="display:none;">
+                    <div class="limit-icon">🚫</div>
+                    <div class="limit-content">
+                        <div class="limit-title">HAD HARIAN DICAPAI</div>
+                        <div class="limit-msg">30 rekod NILAM sehari telah dimasukkan. Automasi akan teruskan semula pada tengah malam.</div>
+                        <div class="limit-countdown" id="limitCountdown">Menunggu reset...</div>
+                    </div>
+                </section>
+
+                <!-- TUGAS AKTIF (Hanya muncul jika memproses) -->
+                <section class="active-task-section glass" id="currentArticleSection" style="display: none;">
+                    <div class="active-badge">MEMPROSES...</div>
+                    <h3 id="currentTitle">Menganalisis artikel seterusnya...</h3>
+                    <a href="#" id="currentUrl" target="_blank" class="article-link">Lihat Sumber ↗</a>
+                    
+                    <div class="step-indicator">
+                        <div class="step" id="step1"><span>1</span><p>Daftar</p></div>
+                        <div class="line"></div>
+                        <div class="step" id="step2"><span>2</span><p>Rating</p></div>
+                        <div class="line"></div>
+                        <div class="step" id="step3"><span>3</span><p>Lampiran</p></div>
+                        <div class="line"></div>
+                        <div class="step" id="step4"><span>4</span><p>Hantar</p></div>
+                    </div>
+                </section>
+
+                <div class="activity-history-split">
+                    <!-- SEKSYEN LOG -->
+                    <section class="log-panel glass">
+                        <div class="section-header">
+                            <h2>📋 LOG AKTIVITI</h2>
+                            <button class="btn-ghost" onclick="clearLog()">Kosongkan</button>
+                        </div>
+                        <div class="log-stream" id="logContainer">
+                            <div class="log-empty">Menunggu permulaan...</div>
+                        </div>
+                    </section>
+
+                    <!-- SEKSYEN SEJARAH -->
+                    <section class="history-panel glass">
+                        <div class="section-header">
+                            <h2>📜 REKOD TERKINI</h2>
+                            <button class="btn-ghost" onclick="refreshHistory()">Segarkan</button>
+                        </div>
+                        <div class="history-feed" id="historyContainer">
+                            <div class="log-empty">Tiada rekod lagi.</div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Dvrk NILAM AutoM V1.4 — Kemudahan Pintar Untuk Pelajar</p>
+        </footer>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="/js/app.js"></script>
+</body>
+</html>

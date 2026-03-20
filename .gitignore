@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Secrets — NEVER push this
+.env
+
+# Runtime files (too big / ephemeral)
+*.png
+submitted_articles.json
+selected_model.txt
+debug_part1_html.txt
+models_*.json
+models_*.txt
+
+# Logs
+npm-debug.log*
