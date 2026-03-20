@@ -330,7 +330,7 @@ async function submitToAINS(article, aiContent) {
         const isHeadless = process.env.HEADLESS !== 'false';
         log(`🖥️ Mode: ${isHeadless ? 'Headless (Cloud)' : 'Visible (Tempatan)'}`);
 
-        browser = await puppeteer.launch({
+        const launchOptions = {
             headless: isHeadless,
             defaultViewport: isHeadless ? { width: 1280, height: 900 } : null,
             args: [
@@ -338,11 +338,21 @@ async function submitToAINS(article, aiContent) {
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
                 '--disable-gpu',
+                '--no-first-run',
+                '--no-zygote',
+                isHeadless ? '--single-process' : '',
                 isHeadless ? '--window-size=1280,900' : '--start-maximized',
                 '--disable-blink-features=AutomationControlled'
-            ],
+            ].filter(arg => arg !== ''),
             ignoreDefaultArgs: ['--enable-automation']
-        });
+        };
+
+        // If running in Docker (like Railway), use the system's chromium if path exists
+        if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+            launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        }
+
+        browser = await puppeteer.launch(launchOptions);
 
         let page = (await browser.pages())[0] || await browser.newPage();
 
