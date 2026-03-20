@@ -113,9 +113,20 @@ function markAsSubmitted(article, status = 'success') {
 function fetchUrl(url) {
     return new Promise((resolve, reject) => {
         const client = url.startsWith('https') ? https : http;
-        client.get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } }, (res) => {
+        const options = {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9,ms;q=0.8'
+            },
+            timeout: 15000
+        };
+        client.get(url, options, (res) => {
             if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
                 return fetchUrl(res.headers.location).then(resolve).catch(reject);
+            }
+            if (res.statusCode !== 200) {
+                return reject(new Error(`Server returned status ${res.statusCode}`));
             }
             let data = '';
             res.on('data', chunk => data += chunk);
@@ -165,7 +176,11 @@ async function fetchBeritaHarianArticles() {
         log(`✅ Berjaya mengambil ${articles.length} artikel dari Berita Harian`);
         return articles;
     } catch (err) {
-        log(`❌ Gagal mengambil artikel: ${err.message}`, 'error');
+        let errMsg = err.message;
+        if (errMsg.includes('Unquoted attribute value')) {
+            errMsg = "Google menyekat akses (Blocked by Google)";
+        }
+        log(`❌ Gagal mengambil artikel: ${errMsg}`, 'error');
         stats.errors++;
         return [];
     }
