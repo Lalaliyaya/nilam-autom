@@ -5,6 +5,7 @@ let pollTimer = null;
 let intervalMs = 600000;
 let lastLogTimestamp = 0;
 let limitCountdownTimer = null;
+let monitorInterval = null;
 
 // ── Init ───────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -311,6 +312,31 @@ async function saveSettings() {
     } catch (err) {
         console.error('Save settings error:', err);
     }
+}
+
+function openLiveMonitor() {
+    const modal = document.getElementById('monitorModal');
+    modal.style.display = 'flex';
+    refreshMonitor();
+    if (monitorInterval) clearInterval(monitorInterval);
+    monitorInterval = setInterval(refreshMonitor, 2000); // refresh every 2s
+}
+
+function closeLiveMonitor() {
+    const modal = document.getElementById('monitorModal');
+    modal.style.display = 'none';
+    if (monitorInterval) clearInterval(monitorInterval);
+    monitorInterval = null;
+}
+
+function refreshMonitor() {
+    const img = document.getElementById('monitorImg');
+    const status = document.getElementById('monitorStatus');
+    if (!img) return;
+    
+    // Add cache-busting timestamp
+    img.src = '/api/screenshot?t=' + Date.now();
+    status.textContent = 'Dikemas kini: ' + new Date().toLocaleTimeString();
 }
 
 // Auto-refresh history periodically

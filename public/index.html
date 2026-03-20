@@ -97,7 +97,10 @@
 
                 <!-- TUGAS AKTIF (Hanya muncul jika memproses) -->
                 <section class="active-task-section glass" id="currentArticleSection" style="display: none;">
-                    <div class="active-badge">MEMPROSES...</div>
+                    <div class="active-header">
+                        <div class="active-badge">MEMPROSES...</div>
+                        <button class="btn-ghost" onclick="openLiveMonitor()">👀 Lihat Skrin Semasa</button>
+                    </div>
                     <h3 id="currentTitle">Menganalisis artikel seterusnya...</h3>
                     <a href="#" id="currentUrl" target="_blank" class="article-link">Lihat Sumber ↗</a>
                     
@@ -141,6 +144,22 @@
         <footer class="footer">
             <p>Dvrk NILAM AutoM V1.4 — Kemudahan Pintar Untuk Pelajar</p>
         </footer>
+    </div>
+
+    <!-- LIVE MONITOR MODAL -->
+    <div id="monitorModal" class="modal-overlay" style="display:none;" onclick="closeLiveMonitor()">
+        <div class="modal-content glass" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>📺 MONITOR LANGSUNG</h3>
+                <button class="btn-ghost" onclick="closeLiveMonitor()">✕ Tutup</button>
+            </div>
+            <div class="monitor-screen">
+                <img id="monitorImg" src="/api/screenshot?t=0" alt="Live Screen">
+                <div class="monitor-overlay-info">
+                    <span id="monitorStatus">Mengemas kini...</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- SCRIPTS -->

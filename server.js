@@ -356,19 +356,26 @@ async function submitToAINS(article, aiContent) {
 
         let page = (await browser.pages())[0] || await browser.newPage();
 
-        // Extra stealth: remove webdriver flag
+        // Extra stealth: remove webdriver flag and emulate human patterns
         await page.evaluateOnNewDocument(() => {
             Object.defineProperty(navigator, 'webdriver', { get: () => false });
-            // Remove Chrome automation indicators
             window.chrome = { runtime: {} };
             Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-            Object.defineProperty(navigator, 'languages', { get: () => ['ms', 'en-US', 'en'] });
+            Object.defineProperty(navigator, 'languages', { get: () => ['ms-MY', 'ms', 'en-US', 'en'] });
+            
+            // Emulate mouse movements once in a while
+            const originalQuerySelector = document.querySelector;
+            document.querySelector = function() {
+                return originalQuerySelector.apply(this, arguments);
+            };
         });
 
-        // Step 0: Go to Article, get real URL, scrape Author, take Screenshot
-        log(`📍 Menavigasi ke artikel asal untuk mendapatkan butiran penuh dan tangkapan skrin...`);
+        // Step 0: Go to Article
+        log(`📍 Menavigasi ke artikel asal...`);
         try {
-            await page.goto(article.googleLink, { waitUntil: 'load', timeout: 30000 });
+            // Random delay to seem human
+            await delay(1000 + Math.random() * 2000);
+            await page.goto(article.googleLink, { waitUntil: 'domcontentloaded', timeout: 30000 });
             await delay(1500); // give it time to fully load and redirect
             
             const realUrl = page.url();
@@ -403,9 +410,9 @@ async function submitToAINS(article, aiContent) {
             }
             
             // Take screenshot for Part 3! 
-            const screenshotPath = path.join(__dirname, 'article-screenshot.png');
-            await page.screenshot({ path: screenshotPath });
-            log(`📸 Tangkapan skrin artikel disimpan untuk Bahagian 3`);
+            await page.screenshot({ path: path.join(__dirname, 'article-screenshot.png') });
+            await page.screenshot({ path: path.join(__dirname, 'live-view.png') });
+            log(`📸 Tangkapan skrin artikel disimpan`);
         } catch (e) {
             log(`⚠️ Gagal mengakses artikel asal: ${e.message}`, 'warn');
         }
@@ -432,6 +439,7 @@ async function submitToAINS(article, aiContent) {
 
         // Take a screenshot to see what we're working with
         await page.screenshot({ path: path.join(__dirname, 'step1-ains-home.png') });
+        await page.screenshot({ path: path.join(__dirname, 'live-view.png') });
         log('📸 Tangkapan skrin halaman utama AINS');
 
         // Step 2: Click Login button
@@ -566,8 +574,7 @@ async function submitToAINS(article, aiContent) {
         const postLoginUrl = page.url();
         log(`📍 URL selepas login: ${postLoginUrl}`);
         await page.screenshot({ path: path.join(__dirname, 'step2-after-login.png') });
-
-        // Step 4: Navigate to add new record
+        await page.screenshot({ path: path.join(__dirname, 'live-view.png') });
         log('📝 Mencari butang tambah rekod (Bahagian 1)...');
         await delay(2000); 
 
@@ -624,6 +631,7 @@ async function submitToAINS(article, aiContent) {
 
         // Take screenshot of the screen where form should be
         await page.screenshot({ path: path.join(__dirname, 'step3-pre-form.png') });
+        await page.screenshot({ path: path.join(__dirname, 'live-view.png') });
 
         // WAIT for the form or the "Pilih sumber bacaan" screen
         log('⏳ Menunggu borang atau skrin pilihan...');
@@ -694,6 +702,7 @@ async function submitToAINS(article, aiContent) {
         // Step 5: Fill in the form
         log('📋 Mengisi borang NILAM (Pelbagai muka surat)...');
         await page.screenshot({ path: path.join(__dirname, 'step3-form-found.png') });
+        await page.screenshot({ path: path.join(__dirname, 'live-view.png') });
 
         let formCompleted = false;
         for (let i = 0; i < 4; i++) {
@@ -843,6 +852,7 @@ async function submitToAINS(article, aiContent) {
             
             await delay(1000);
             await page.screenshot({ path: path.join(__dirname, `step3-form-page-${i}.png`) });
+            await page.screenshot({ path: path.join(__dirname, 'live-view.png') });
 
             // Logic to choose between Next and Submit
             // Strictly Parts 1-3 -> Seterusnya, Part 4 -> Hantar
@@ -972,6 +982,7 @@ async function submitToAINS(article, aiContent) {
 
         // Final screenshot (always taken)
         await page.screenshot({ path: path.join(__dirname, 'step4-after-submit.png'), fullPage: true });
+        await page.screenshot({ path: path.join(__dirname, 'live-view.png'), fullPage: true });
         log('📸 Tangkapan skrin akhir disimpan');
 
         if (submissionConfirmed) {
@@ -997,6 +1008,7 @@ async function submitToAINS(article, aiContent) {
                 const pages = await browser.pages();
                 if (pages && pages.length > 0) {
                     const lastPage = pages[pages.length - 1];
+                    await lastPage.screenshot({ path: path.join(__dirname, 'live-view.png'), fullPage: true });
                     await lastPage.screenshot({ path: path.join(__dirname, 'error-screenshot.png'), fullPage: true });
                 }
                 await browser.close();
@@ -1147,8 +1159,19 @@ async function runContinuousLoop() {
 }
 
 // ─── API ROUTES ────────────────────────────────────────
+app.get('/api/screenshot', (req, res) => {
+    const liveViewPath = path.join(__dirname, 'live-view.png');
+    if (fs.existsSync(liveViewPath)) {
+        res.sendFile(liveViewPath);
+    } else {
+        // Fallback to any existing screenshot
+        const fallback = path.join(__dirname, 'step1-ains-home.png');
+        if (fs.existsSync(fallback)) res.sendFile(fallback);
+        else res.status(404).send('No screenshot yet');
+    }
+});
+
 app.get('/api/status', (req, res) => {
-    const submitted = loadSubmitted();
     const msLeft = dailyLimitReached ? msUntilMidnight() : 0;
     res.json({
         running: automationRunning,
